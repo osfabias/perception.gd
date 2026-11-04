@@ -194,6 +194,41 @@ func test_vision_area_forgets_exited_visible_objects() -> void:
 	assert_eq(area.visible_objects.size(), 0)
 
 
+func test_vision_area_emits_entered_signal_for_visible_object() -> void:
+	var area := _make_vision_area()
+	watch_signals(area)
+	var body := _make_visible_body(Vector3(0.0, 0.0, 5.0))
+	await wait_physics_frames(3)
+
+	assert_signal_emitted_with_parameters(area, "visible_object_entered", [body])
+	assert_signal_not_emitted(area, "visible_object_exited")
+
+
+func test_vision_area_emits_exited_signal_when_object_leaves() -> void:
+	var area := _make_vision_area()
+	var body := _make_visible_body(Vector3(0.0, 0.0, 5.0))
+	await wait_physics_frames(3)
+
+	watch_signals(area)
+	body.queue_free()
+	await wait_physics_frames(3)
+
+	assert_signal_emitted_with_parameters(area, "visible_object_exited", [body])
+
+
+func test_vision_area_emits_exited_signal_when_object_is_occluded() -> void:
+	var area := _make_vision_area()
+	var body := _make_visible_body(Vector3(0.0, 0.0, 5.0))
+	await wait_physics_frames(3)
+
+	watch_signals(area)
+	_make_body(Vector3(0.0, 0.0, 2.5))
+	await wait_physics_frames(3)
+
+	assert_signal_emitted_with_parameters(area, "visible_object_exited", [body])
+	assert_signal_not_emitted(area, "visible_object_entered")
+
+
 func _make_vision_area() -> VisionArea3D:
 	var area := VisionArea3D.new()
 

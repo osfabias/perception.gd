@@ -4,6 +4,14 @@
 class_name VisionArea2D
 extends Area2D
 
+# ---[ Signals ]---
+
+## Emitted when a [VisibleObject2D] enters the vision area and is not occluded.
+signal visible_object_entered(visible_object: VisibleObject2D)
+
+## Emitted when a [VisibleObject2D] leaves the vision area or becomes occluded.
+signal visible_object_exited(visible_object: VisibleObject2D)
+
 # ---[ Public Variables ]---
 
 ## Objects, that are currently visible inside the vision area.
@@ -51,7 +59,6 @@ func _add_visible_object(node: Node2D) -> void:
 
 		if not _tracked_objects.has(visible_object):
 			_tracked_objects.append(visible_object)
-			_update_visibility()
 
 
 func _remove_visible_object(node: Node2D) -> void:
@@ -59,15 +66,24 @@ func _remove_visible_object(node: Node2D) -> void:
 		var visible_object := node as VisibleObject2D
 
 		_tracked_objects.erase(visible_object)
-		visible_objects.erase(visible_object)
 
 
 func _update_visibility() -> void:
+	var previously_visible_objects: Array = []
+	previously_visible_objects.append_array(visible_objects)
 	visible_objects.clear()
 
 	for visible_object in _tracked_objects:
 		if is_instance_valid(visible_object) and _has_line_of_sight(visible_object):
 			visible_objects.append(visible_object)
+
+	for visible_object in visible_objects:
+		if not previously_visible_objects.has(visible_object):
+			visible_object_entered.emit(visible_object)
+
+	for visible_object in previously_visible_objects:
+		if not is_instance_valid(visible_object) or not visible_objects.has(visible_object):
+			visible_object_exited.emit(visible_object)
 
 
 func _has_line_of_sight(visible_object: VisibleObject2D) -> bool:
